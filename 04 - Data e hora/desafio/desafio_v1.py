@@ -1,6 +1,6 @@
 import textwrap
 from abc import ABC, abstractclassmethod, abstractproperty
-from datetime import datetime
+import datetime
 
 
 class ContasIterador:
@@ -29,13 +29,18 @@ class ContasIterador:
 class Cliente:
     def __init__(self, endereco):
         self.endereco = endereco
-        self.contas = []
+        self.contas = [] # Para conter objetos do tipo Conta, que contem um _historico, que é um objeto Historico()
+                         # Esse objeto contem todas as transacoes, e um metodo transacoes_do_dia() que devolve uma lista de transacoes,
+                         # representado como um dicionario, com a chave "dia" nele
         self.indice_conta = 0
 
     def realizar_transacao(self, conta, transacao):
         # TODO: validar o número de transações e invalidar a operação se for necessário
         # print("\n@@@ Você excedeu o número de transações permitidas para hoje! @@@")
-        transacao.registrar(conta)
+        if len(conta._historico.transacoes_do_dia()) >= 10:
+            print("\n@@@ Você excedeu o número de transações permitidas para hoje! @@@")
+        else:
+            transacao.registrar(conta)
 
     def adicionar_conta(self, conta):
         self.contas.append(conta)
@@ -148,7 +153,9 @@ class ContaCorrente(Conta):
 
 class Historico:
     def __init__(self):
-        self._transacoes = []
+        self._transacoes = [] # Lista de transações na forma de um dicionário 
+                              # contem uma chave "data", com um string "%d-%m-%Y %H:%M:%S"
+        # note: the underscore is a Python convention to indicate a private attribute
 
     @property
     def transacoes(self):
@@ -159,7 +166,11 @@ class Historico:
             {
                 "tipo": transacao.__class__.__name__,
                 "valor": transacao.valor,
-                "data": datetime.now().strftime("%d-%m-%Y %H:%M:%S"),
+                "data": datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"), 
+                # using .strftime, which converts date to a string, instead of leaving it as datetime object
+                # will either need to parse the string or save datetime object separately?
+                "dia": datetime.date.today().strftime("%d-%m-%Y"),
+                # ^Resolvi criar outra chave para guardar o dia da transação
             }
         )
 
@@ -168,9 +179,16 @@ class Historico:
             if tipo_transacao is None or transacao["tipo"].lower() == tipo_transacao.lower():
                 yield transacao
 
+
     # TODO: filtrar todas as transações realizadas no dia
     def transacoes_do_dia(self):
-        pass
+        transacoes_hoje = []
+        hoje = datetime.date.today().strftime("%d-%m-%Y") 
+        for transacao in self._transacoes: 
+            if transacao["dia"] == hoje:
+                transacoes_hoje.append(transacao)
+        # Try same with list comprehension?
+        return transacoes_hoje
 
 
 class Transacao(ABC):
@@ -217,14 +235,14 @@ class Deposito(Transacao):
 def log_transacao(func):
     def envelope(*args, **kwargs):
         resultado = func(*args, **kwargs)
-        print(f"{datetime.now()}: {func.__name__.upper()}")
+        print(f"{datetime.datetime.now()}: {func.__name__.upper()}")
         return resultado
 
     return envelope
 
 
 def menu():
-    menu = """\n
+    menu = """\n\n\n
     ================ MENU ================
     [d]\tDepositar
     [s]\tSacar
@@ -233,6 +251,7 @@ def menu():
     [lc]\tListar contas
     [nu]\tNovo usuário
     [q]\tSair
+
     => """
     return input(textwrap.dedent(menu))
 
@@ -255,17 +274,20 @@ def recuperar_conta_cliente(cliente):
 def depositar(clientes):
     cpf = input("Informe o CPF do cliente: ")
     cliente = filtrar_cliente(cpf, clientes)
+    # Find client by CPF
 
     if not cliente:
         print("\n@@@ Cliente não encontrado! @@@")
         return
-
-    valor = float(input("Informe o valor do depósito: "))
-    transacao = Deposito(valor)
+    # ...and return error if not found
 
     conta = recuperar_conta_cliente(cliente)
     if not conta:
         return
+    
+    valor = float(input("Informe o valor do depósito: "))
+    transacao = Deposito(valor)
+
 
     cliente.realizar_transacao(conta, transacao)
 
@@ -279,12 +301,12 @@ def sacar(clientes):
         print("\n@@@ Cliente não encontrado! @@@")
         return
 
-    valor = float(input("Informe o valor do saque: "))
-    transacao = Saque(valor)
-
     conta = recuperar_conta_cliente(cliente)
     if not conta:
         return
+    
+    valor = float(input("Informe o valor do saque: "))
+    transacao = Saque(valor)
 
     cliente.realizar_transacao(conta, transacao)
 
@@ -307,7 +329,7 @@ def exibir_extrato(clientes):
     tem_transacao = False
     for transacao in conta.historico.gerar_relatorio():
         tem_transacao = True
-        extrato += f"\n{transacao['tipo']}:\n\tR$ {transacao['valor']:.2f}"
+        extrato += f"\n{transacao['data']}\n{transacao['tipo']}:\n\tR$ {transacao['valor']:.2f}"
 
     if not tem_transacao:
         extrato = "Não foram realizadas movimentações"
@@ -348,11 +370,18 @@ def criar_conta(numero_conta, clientes, contas):
 
     # NOTE: O valor padrão de limite de saques foi alterado para 50 saques
     conta = ContaCorrente.nova_conta(cliente=cliente, numero=numero_conta, limite=500, limite_saques=50)
-    contas.append(conta)
+    # Method nova_conta() is a class method (class methods implicitly take the class 
+    # as the first argument [here, as "cls"]), which returns an instantiation of
+    # ContaCorrente(numero, cliente, limite, limite_saques)
+
+    contas.append(conta) 
     cliente.contas.append(conta)
+    # append the new account separately to the contas list created in main() and to the 
+    # Cliente objects self.contas list
+    # NOTE: cliente tem um método `adicionar_conta(conta)` que não ta sendo usado.
+    # Poderia mudar a linha acima para: cliente.adicionar_conta(conta)
 
     print("\n=== Conta criada com sucesso! ===")
-
 
 def listar_contas(contas):
     for conta in ContasIterador(contas):
@@ -361,10 +390,12 @@ def listar_contas(contas):
 
 
 def main():
-    clientes = []
-    contas = []
+    clientes = [] # create empty list para receber objetos do tipo:
+                  # PessoaFisica(nome=nome, data_nascimento=data_nascimento, cpf=cpf, endereco=endereco)
+    contas = [] # create empty list para receber objectos do tipo: 
+                # ContaCorrente(numero, cliente, limite, limite_saques)
 
-    while True:
+    while True: # loop until break
         opcao = menu()
 
         if opcao == "d":
