@@ -82,6 +82,10 @@ def filtrar_usuario(cpf, usuarios):
 
 
 def criar_conta(agencia, numero_conta, usuarios):
+     if not usuarios:  # Adicionando o if not, verificando se há algum usuário cadastrado
+        print("\n@@@ Nenhum usuário cadastrado! Não é possível criar uma conta. @@@")
+        return None  # Retorna None se não houver usuários cadastrados
+         
     cpf = input("Informe o CPF do usuário: ")
     usuario = filtrar_usuario(cpf, usuarios)
 
