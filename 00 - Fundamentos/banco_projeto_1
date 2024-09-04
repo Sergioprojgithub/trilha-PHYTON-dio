@@ -1,0 +1,76 @@
+print("-"*25)
+print("BEM VINDO(A) AO BANCO")
+print("-"*25)
+escolha=str(input("----------MENU----------\n"
+      "Se deseja realizar um deposito digite 'd'\n"
+      "Se deseja realizar um saque digite 's'\n"
+      "Se deseja consultar o extrato digite 'e'\n"
+      "Se deseja sair digite 'q'\n"
+      "------------------------->"))
+
+saldo = 0
+LIMITE_SAQUE = 3
+extrato_total=""
+extrato_final=""
+
+def deposito(saldo):
+    global extrato_total
+    depositar=int(input("Qual o valor que deseja depositar?"))
+    if(depositar>0):
+        saldo+=depositar
+        extrato_total += f"Deposito: R${depositar:.2f}\n"
+        return saldo, extrato_total
+    else:
+        print("Não é possivel depositar valores iguais ou menores que zero")
+
+def saque(saldo):
+    global LIMITE_SAQUE
+    global extrato_total
+    if(LIMITE_SAQUE>0):
+        sacar=int(input("Qual o valor que deseja sacar?"))
+        if(sacar<valor_deposito[0] and sacar<=500):
+            saldo-=sacar
+            LIMITE_SAQUE=LIMITE_SAQUE-1
+            extrato_total += f"Saque: R${sacar:.2f}\n"
+            return saldo, LIMITE_SAQUE, extrato_total
+        else:
+            print("Não é possivel sacar um valor maior do que já tem na conta ou um valor maior que 500 reais")
+            saldo-=0
+            LIMITE_SAQUE-=0
+            extrato_total+=""
+            return saldo, LIMITE_SAQUE, extrato_total
+    else:
+        print("Você atingiu o limite de saque diario, retorne amanhã para mais")
+        saldo -= 0
+        LIMITE_SAQUE -= 0
+        extrato_total += ""
+        return saldo, LIMITE_SAQUE, extrato_total
+
+
+def extrato(extrato_final):
+    if(extrato_final!=""):
+        print(extrato_final)
+        print(f"Conta Atual: R${saldo:.2f}")
+    else:
+        print("Você não ainda não realizou nenhuma operação.")
+
+while True:
+    if(escolha=='d'):
+        valor_deposito = deposito(saldo)
+        saldo=valor_deposito[0]
+        extrato_final=valor_deposito[1]
+    elif(escolha=='s'):
+        valor_saque = saque(saldo)
+        saldo=valor_saque[0]
+        LIMITE_SAQUE=valor_saque[1]
+        extrato_final=valor_saque[2]
+    elif(escolha=='e'):
+        valor_extrato=extrato(extrato_final)
+    elif(escolha=='q'):
+        break
+    escolha = str(input("----------MENU----------\n"
+                        "Se deseja realizar um deposito digite 'd'\n"
+                        "Se deseja realizar um saque digite 's'\n"
+                        "Se deseja consultar o extrato digite 'e'\n"
+                        "Se deseja sair digite 'q'\n"
+                        "------------------------->"))
