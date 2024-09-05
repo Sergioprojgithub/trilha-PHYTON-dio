@@ -101,6 +101,21 @@ def listar_contas(contas):
         """
         print("=" * 100)
         print(textwrap.dedent(linha))
+        
+def exibir_informacoes_sistema():
+    print("\n=== Informações do Sistema ===")
+    print("Sistema Bancário Simples")
+    print("Versão: 1.0")
+    print("Desenvolvedor: [Nome]")
+    print("Este sistema permite gerenciar contas bancárias e realizar operações básicas.")
+    print("=============================") 
+
+
+
+def exibir_boas_vindas():
+    print("\n=== Bem-vindo ao Sistema de Banco ===")
+    print("Aqui você pode realizar depósitos, saques, extrado, nova conta, listar contas, novo usuário!") 
+    
 
 
 def main():
@@ -113,6 +128,9 @@ def main():
     numero_saques = 0
     usuarios = []
     contas = []
+
+    exibir_informacoes_sistema()
+    exibir_boas_vindas() 
 
     while True:
         opcao = menu()
